@@ -108,36 +108,67 @@ function App() {
     space-y-16 sm:space-y-24
   "
       >
-        <div className="grid gap-6 md:gap-8 md:grid-cols-3 max-w-7xl mx-auto">
+        <div className="
+  grid grid-cols-1
+  md:grid-cols-3
+  gap-6 md:gap-8
+  max-w-7xl mx-auto
+">
 
-          <section className="border rounded-2xl p-6 bg-white/5 backdrop-blur-sm">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              Remove Background
-            </h2>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              Menghilangkan background pada gambar secara otomatis.
-            </p>
+          {/* CARD */}
+          <section className="
+    aspect-[4/5]
+    border rounded-2xl
+    p-6
+    bg-white/5 backdrop-blur-sm
+    flex flex-col justify-between
+  ">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+                Remove Background
+              </h2>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                Menghilangkan background pada gambar secara otomatis.
+              </p>
+            </div>
           </section>
 
-          <section className="border rounded-2xl p-6 bg-white/5 backdrop-blur-sm">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              Brightness & Contrast
-            </h2>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              Mengatur intensitas cahaya dan kontras citra digital.
-            </p>
+          <section className="
+    aspect-[4/5]
+    border rounded-2xl
+    p-6
+    bg-white/5 backdrop-blur-sm
+    flex flex-col justify-between
+  ">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+                Brightness & Contrast
+              </h2>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                Mengatur intensitas cahaya dan kontras citra digital.
+              </p>
+            </div>
           </section>
 
-          <section className="border rounded-2xl p-6 bg-white/5 backdrop-blur-sm">
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              Segmentation Monochrome
-            </h2>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              Mengubah citra menjadi tampilan monokrom.
-            </p>
+          <section className="
+    aspect-[4/5]
+    border rounded-2xl
+    p-6
+    bg-white/5 backdrop-blur-sm
+    flex flex-col justify-between
+  ">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+                Segmentation Monochrome
+              </h2>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                Mengubah citra menjadi tampilan monokrom.
+              </p>
+            </div>
           </section>
 
         </div>
+
       </main>
 
     </div>

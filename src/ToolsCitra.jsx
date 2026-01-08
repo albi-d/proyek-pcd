@@ -969,15 +969,15 @@ export default function ToolsCitra() {
                         </div>
 
                         <button
-                            onMouseDown={() => {
+                            onPointerDown={() => {
                                 setIsComparing(true)
                                 drawImage(originalCanvasRef.current, rotation, flipX, flipY, zoom)
                             }}
-                            onMouseUp={() => {
+                            onPointerUp={() => {
                                 setIsComparing(false)
                                 renderActiveImage()
                             }}
-                            onMouseLeave={() => {
+                            onPointerLeave={() => {
                                 if (!processedImageDataRef.current) return
                                 const ctx = canvasRef.current.getContext("2d")
                                 ctx.putImageData(processedImageDataRef.current, 0, 0)
@@ -985,6 +985,7 @@ export default function ToolsCitra() {
                         >
                             <MdCompare className="text-2xl text-gray-100" />
                         </button>
+
                     </div>
 
                 </div>
