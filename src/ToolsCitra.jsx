@@ -4,6 +4,7 @@ import { PiFlipHorizontal, PiFlipVertical } from "react-icons/pi";
 import { RiToolsLine } from "react-icons/ri";
 import { SelfieSegmentation } from "@mediapipe/selfie_segmentation"
 import { MdCompare } from "react-icons/md";
+import { removeBackground } from "@imgly/background-removal"
 
 
 export default function ToolsCitra() {
@@ -38,6 +39,8 @@ export default function ToolsCitra() {
     const [showSidebar, setShowSidebar] = useState(false)
     const hasTransparencyRef = useRef(false)
     const [contrast, setContrast] = useState(0)
+    const exportImageRef = useRef(null) // simpan gambar Remove BG murni
+    const [isLoadingRemoveBG, setIsLoadingRemoveBG] = useState(false)
 
     const loadImage = (file) => {
         if (!file || !file.type.startsWith("image/")) return
@@ -429,10 +432,71 @@ export default function ToolsCitra() {
     }
 
     const handleRemoveBg = async () => {
-        if (!originalImg || !segmenterRef.current) return
+        if (!originalCanvasRef.current) return
 
-        await segmenterRef.current.send({ image: originalImg })
+        setIsLoadingRemoveBG(true) // 🔹 mulai loading
+
+        originalCanvasRef.current.toBlob(async (blob) => {
+            if (!blob) {
+                setIsLoadingRemoveBG(false)
+                return
+            }
+
+            const file = new File([blob], "image.png", { type: "image/png" })
+            const formData = new FormData()
+            formData.append("image_file", file)
+            formData.append("size", "auto")
+
+            try {
+                const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+                    method: "POST",
+                    headers: { "X-Api-Key": "guCRc87RirWJyQbdZEWc2iUf" },
+                    body: formData
+                })
+
+                if (!response.ok) {
+                    const error = await response.json()
+                    console.error("RemoveBG API error:", error)
+                    setIsLoadingRemoveBG(false)
+                    return
+                }
+
+                const resultBlob = await response.blob()
+                const resultUrl = URL.createObjectURL(resultBlob)
+
+                const img = new Image()
+                img.src = resultUrl
+                img.onload = () => {
+                    // 🔹 Canvas export tanpa checkerboard
+                    const exportCanvas = document.createElement("canvas")
+                    exportCanvas.width = img.width
+                    exportCanvas.height = img.height
+                    exportCanvas.getContext("2d").drawImage(img, 0, 0)
+                    exportImageRef.current = exportCanvas
+
+                    // 🔹 Canvas preview dengan checkerboard
+                    const previewCanvas = document.createElement("canvas")
+                    previewCanvas.width = img.width
+                    previewCanvas.height = img.height
+                    const ctx = previewCanvas.getContext("2d")
+                    const pattern = ctx.createPattern(checkerPatternRef.current, "repeat")
+                    ctx.fillStyle = pattern
+                    ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height)
+                    ctx.drawImage(img, 0, 0)
+
+                    activeImageRef.current = previewCanvas
+                    hasTransparencyRef.current = true
+
+                    renderActiveImage()
+                    setIsLoadingRemoveBG(false) // 🔹 selesai loading
+                }
+            } catch (err) {
+                console.error("RemoveBG failed:", err)
+                setIsLoadingRemoveBG(false)
+            }
+        }, "image/png")
     }
+
 
 
     useEffect(() => {
@@ -660,6 +724,7 @@ export default function ToolsCitra() {
     const renderActiveImage = () => {
         if (!activeImageRef.current) return
 
+        // 1️⃣ Preview canvas (checkerboard + image)
         drawImage(
             activeImageRef.current,
             rotation,
@@ -667,8 +732,26 @@ export default function ToolsCitra() {
             flipY,
             zoom
         )
-    }
 
+        // 2️⃣ Update export canvas murni HANYA gambar tanpa checkerboard
+        if (hasTransparencyRef.current && exportImageRef.current) {
+            // exportImageRef.current sudah ada saat RemoveBG
+            // hanya update jika ada perubahan filter
+            const temp = document.createElement("canvas")
+            temp.width = exportImageRef.current.width
+            temp.height = exportImageRef.current.height
+            const ctx = temp.getContext("2d")
+            ctx.drawImage(exportImageRef.current, 0, 0)
+            exportImageRef.current = temp
+        } else if (!hasTransparencyRef.current) {
+            // untuk gambar biasa tanpa transparansi
+            const temp = document.createElement("canvas")
+            temp.width = activeImageRef.current.width
+            temp.height = activeImageRef.current.height
+            temp.getContext("2d").drawImage(activeImageRef.current, 0, 0)
+            exportImageRef.current = temp
+        }
+    }
 
     const removeBackground = () => {
         if (!originalImageDataRef.current) return
@@ -830,25 +913,15 @@ export default function ToolsCitra() {
     }
 
     const exportImage = () => {
-        if (!activeImageRef.current) return
+        if (!exportImageRef.current) return
 
-        // offscreen canvas (gambar asli TANPA checkerboard)
-        const srcCanvas = activeImageRef.current
-
-        const exportCanvas = document.createElement("canvas")
-        exportCanvas.width = srcCanvas.width
-        exportCanvas.height = srcCanvas.height
-
-        const ctx = exportCanvas.getContext("2d")
-
-        // 🔥 gambar langsung image data hasil edit
-        ctx.drawImage(srcCanvas, 0, 0)
-
-        // 🔽 download
-        const link = document.createElement("a")
-        link.download = "result.png"
-        link.href = exportCanvas.toDataURL("image/png")
-        link.click()
+        exportImageRef.current.toBlob((blob) => {
+            if (!blob) return
+            const a = document.createElement("a")
+            a.href = URL.createObjectURL(blob)
+            a.download = "image.png"
+            a.click()
+        }, "image/png")
     }
 
 
@@ -937,6 +1010,12 @@ export default function ToolsCitra() {
                                 : "opacity-0 scale-95 pointer-events-none"}
     `}
                     />
+
+                    {isLoadingRemoveBG && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-white"></div>
+                        </div>
+                    )}
 
                     {!hasImage && (
                         <label
