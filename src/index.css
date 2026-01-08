@@ -30,10 +30,16 @@ html {
 }
 
 .bg-gambar {
-  background-image: url("/pemandangan.jpg");
+  background-image: url("/op1.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+.text-shadow-soft {
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 :-webkit-scrollbar {

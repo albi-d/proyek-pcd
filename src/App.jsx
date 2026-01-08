@@ -47,11 +47,11 @@ function App() {
       `}
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-3 md:py-4 flex justify-between items-center">
-              <h1 className="font-bold text-base sm:text-lg">MyWebsite</h1>
+              <h1 className="font-bold text-base sm:text-lg"><span className=" text-orange-300 font-extrabold">Wava</span>Crew</h1>
 
               <Link
                 to="/tools"
-                className="text-sm sm:text-base font-medium hover:opacity-80 transition"
+                className="text-sm sm:text-base font-medium hover:opacity-80 transition bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-lg"
               >
                 Mulai sekarang
               </Link>
@@ -71,11 +71,11 @@ function App() {
     z-0
   "
       >
-        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 text-left">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 text-left text-shadow-soft">
           DILMAGES REMOVE <br /> BACKGROUND
         </h1>
 
-        <span className="text-sm sm:text-base md:text-xl mb-5 max-w-xl text-left leading-relaxed">
+        <span className="text-sm sm:text-base md:text-xl mb-5 max-w-xl text-left leading-relaxed text-shadow-soft">
           Implementasi teknik pengolahan citra digital
           untuk pembelajaran dan eksperimen.
         </span>
@@ -90,7 +90,7 @@ function App() {
       rounded-lg
       text-sm sm:text-base
       transition
-      w-2/4
+      w-fit
     "
         >
           Mulai sekarang
@@ -116,60 +116,173 @@ function App() {
 ">
 
           {/* CARD */}
-          <section className="
+          <section
+            className="
+    relative
     aspect-[4/5]
-    border rounded-2xl
-    p-6
-    bg-white/5 backdrop-blur-sm
-    flex flex-col justify-between
-  ">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+    rounded-2xl
+    overflow-hidden
+    flex flex-col justify-end
+  "
+          >
+            {/* BACKGROUND IMAGE */}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('/image.png')" }}
+            />
+
+            {/* OVERLAY */}
+            <div className="
+    absolute inset-0
+    bg-gradient-to-t
+    from-black/70 via-black/40 to-black/10
+  " />
+
+            {/* CONTENT */}
+            <div className="relative z-10 p-6 text-white">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 drop-shadow-lg">
                 Remove Background
               </h2>
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+              <p className="text-gray-200 text-sm sm:text-base leading-relaxed drop-shadow">
                 Menghilangkan background pada gambar secara otomatis.
               </p>
             </div>
           </section>
 
-          <section className="
+          <section
+            className="
+    relative
     aspect-[4/5]
-    border rounded-2xl
-    p-6
-    bg-white/5 backdrop-blur-sm
-    flex flex-col justify-between
-  ">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+    rounded-2xl
+    overflow-hidden
+    flex flex-col justify-end
+  "
+          >
+            {/* BACKGROUND IMAGE */}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('/image1.png')" }}
+            />
+
+            {/* OVERLAY */}
+            <div
+              className="
+      absolute inset-0
+      bg-gradient-to-t
+      from-black/70 via-black/40 to-black/10
+    "
+            />
+
+            {/* CONTENT */}
+            <div className="relative z-10 p-6 text-white">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 drop-shadow-lg">
                 Brightness & Contrast
               </h2>
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+              <p className="text-gray-200 text-sm sm:text-base leading-relaxed drop-shadow">
                 Mengatur intensitas cahaya dan kontras citra digital.
               </p>
             </div>
           </section>
 
-          <section className="
+
+          <section
+            className="
+    relative
     aspect-[4/5]
-    border rounded-2xl
-    p-6
-    bg-white/5 backdrop-blur-sm
-    flex flex-col justify-between
-  ">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-3">
+    rounded-2xl
+    overflow-hidden
+    flex flex-col justify-end
+  "
+          >
+            {/* BACKGROUND IMAGE */}
+            <div
+              className="absolute inset-0 bg-cover bg-center grayscale"
+              style={{ backgroundImage: "url('/image2.png')" }}
+            />
+
+            {/* OVERLAY */}
+            <div
+              className="
+      absolute inset-0
+      bg-gradient-to-t
+      from-black/80 via-black/50 to-black/20
+    "
+            />
+
+            {/* CONTENT */}
+            <div className="relative z-10 p-6 text-white">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 drop-shadow-lg">
                 Segmentation Monochrome
               </h2>
-              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+              <p className="text-gray-200 text-sm sm:text-base leading-relaxed drop-shadow">
                 Mengubah citra menjadi tampilan monokrom.
               </p>
             </div>
           </section>
 
+
         </div>
 
       </main>
+
+      <footer className="relative bg-langitmalam border-t border-white/10">
+        {/* GRADIENT GLOW */}
+        <div className="
+    absolute inset-x-0 top-0 h-px
+    bg-gradient-to-r from-transparent via-blue-500/40 to-transparent
+  " />
+
+        <div className="
+    max-w-7xl mx-auto
+    px-4 sm:px-6 md:px-8
+    py-12
+    grid grid-cols-1 md:grid-cols-3
+    gap-8
+    text-gray-300
+  ">
+          {/* BRAND */}
+          <div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              <span className="text-orange-300">Wava</span>Crew
+            </h2>
+            <p className="text-sm leading-relaxed max-w-sm">
+              Proyek kelompok implementasi pengolahan citra digital
+              untuk pembelajaran dan eksperimen teknologi visual.
+            </p>
+          </div>
+
+          {/* TEAM */}
+          <div>
+            <h3 className="text-white font-semibold mb-3">Tim Pengembang</h3>
+            <ul className="space-y-1 text-sm">
+              <li>• Ahmad Albi Syahputra Dalimunthe</li>
+              <li>• Windy Amelia Pratiwi</li>
+              <li>• Mhd Izwandi</li>
+              <li>• Vico Delon Hutagaol</li>
+            </ul>
+          </div>
+
+          {/* INFO */}
+          <div>
+            <h3 className="text-white font-semibold mb-3">Tentang Proyek</h3>
+            <p className="text-sm leading-relaxed">
+              Aplikasi ini dikembangkan sebagai bagian dari tugas
+              mata kuliah <span className="text-white font-medium">Pengolahan Citra Digital</span>,
+              dengan fokus pada remove background, brightness, dan segmentasi monokrom.
+            </p>
+          </div>
+        </div>
+
+        {/* BOTTOM BAR */}
+        <div className="
+    border-t border-white/10
+    py-4 text-center
+    text-xs text-gray-400
+  ">
+          © {new Date().getFullYear()} WavaCrew • Digital Image Processing Project
+        </div>
+      </footer>
+
 
     </div>
   )

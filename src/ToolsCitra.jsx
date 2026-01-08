@@ -36,7 +36,8 @@ export default function ToolsCitra() {
     const baseImageDataRef = useRef(null)
     const zoomPercent = Math.round(zoom * 100)
     const [showSidebar, setShowSidebar] = useState(false)
-
+    const hasTransparencyRef = useRef(false)
+    const [contrast, setContrast] = useState(0)
 
     const loadImage = (file) => {
         if (!file || !file.type.startsWith("image/")) return
@@ -100,6 +101,33 @@ export default function ToolsCitra() {
         loadImage(file)
     }
 
+    const checkerPatternRef = useRef(null)
+
+    const createCheckerPattern = () => {
+        const size = 16
+        const c = document.createElement("canvas")
+        c.width = size * 2
+        c.height = size * 2
+
+        const ctx = c.getContext("2d")
+
+        ctx.fillStyle = "#e5e7eb" // light
+        ctx.fillRect(0, 0, size, size)
+        ctx.fillRect(size, size, size, size)
+
+        ctx.fillStyle = "#9ca3af" // dark
+        ctx.fillRect(size, 0, size, size)
+        ctx.fillRect(0, size, size, size)
+
+        return c
+    }
+
+    useEffect(() => {
+        const patternCanvas = createCheckerPattern()
+        checkerPatternRef.current = patternCanvas
+    }, [])
+
+
     const drawImage = (img, rotateDeg, flipX, flipY, zoomLevel = 1) => {
         const canvas = canvasRef.current
         const ctx = canvas.getContext("2d")
@@ -112,6 +140,31 @@ export default function ToolsCitra() {
         canvas.height = ch
 
         ctx.clearRect(0, 0, cw, ch)
+        // ✅ DRAW CHECKERBOARD PATTERN
+        const info = containInfoRef.current
+
+        if (hasTransparencyRef.current && checkerPatternRef.current && containInfoRef.current) {
+            const info = containInfoRef.current
+            const pattern = ctx.createPattern(checkerPatternRef.current, "repeat")
+
+            ctx.save()
+            ctx.translate(cw / 2, ch / 2)
+            ctx.scale(zoomLevel, zoomLevel)
+            ctx.rotate((rotateDeg * Math.PI) / 180)
+            ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1)
+
+            ctx.fillStyle = pattern
+            ctx.fillRect(
+                -info.drawWidth / 2,
+                -info.drawHeight / 2,
+                info.drawWidth,
+                info.drawHeight
+            )
+
+            ctx.restore()
+        }
+
+
         ctx.save()
 
         // ⬇️ CENTER
@@ -215,12 +268,29 @@ export default function ToolsCitra() {
         setSplitChannels([]);
         setBrightness(0)
         setBinary(128)
+        setContrast(0)
 
         // 🔥 RESET SUMBER AKTIF
         activeImageRef.current = originalCanvasRef.current;
+        hasTransparencyRef.current = false
 
         renderActiveImage(); // pakai activeImageRef
     };
+
+    const showOriginalForCompare = () => {
+        if (!originalCanvasRef.current) return
+        drawImage(
+            originalCanvasRef.current,
+            rotation,
+            flipX,
+            flipY,
+            zoom
+        )
+    }
+
+    const showProcessedAfterCompare = () => {
+        renderActiveImage()
+    }
 
     const getNearestZoomPreset = (zoom) => {
         const percent = Math.round(zoom * 100)
@@ -352,6 +422,7 @@ export default function ToolsCitra() {
         temp.getContext("2d").putImageData(finalImage, 0, 0)
 
         activeImageRef.current = temp
+        hasTransparencyRef.current = true
         renderActiveImage()
 
 
@@ -627,6 +698,7 @@ export default function ToolsCitra() {
         // 🔑 SET SEBAGAI SUMBER AKTIF
         activeImageRef.current = temp
 
+        hasTransparencyRef.current = true
         // 🔑 RENDER ULANG
         renderActiveImage()
     }
@@ -663,6 +735,7 @@ export default function ToolsCitra() {
         temp.getContext("2d").putImageData(imageData, 0, 0)
 
         activeImageRef.current = temp
+        hasTransparencyRef.current = false
         renderActiveImage()
     }
     // value: -100 sampai +100
@@ -729,6 +802,54 @@ export default function ToolsCitra() {
         renderActiveImage()
     }
 
+    const applyContrast = (value) => {
+        if (!activeImageRef.current) return
+
+        const src = activeImageRef.current
+        const ctx = src.getContext("2d")
+
+        const imageData = ctx.getImageData(0, 0, src.width, src.height)
+        const data = imageData.data
+
+        // 🔥 rumus kontras
+        const c = Math.max(-100, Math.min(100, value))
+        const factor = (259 * (c + 255)) / (255 * (259 - c))
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 0) continue // ⛔ skip pixel transparan
+
+            data[i] = Math.min(255, Math.max(0, factor * (data[i] - 128) + 128))
+            data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128))
+            data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128))
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+        processedImageDataRef.current = imageData
+
+        renderActiveImage()
+    }
+
+    const exportImage = () => {
+        if (!activeImageRef.current) return
+
+        // offscreen canvas (gambar asli TANPA checkerboard)
+        const srcCanvas = activeImageRef.current
+
+        const exportCanvas = document.createElement("canvas")
+        exportCanvas.width = srcCanvas.width
+        exportCanvas.height = srcCanvas.height
+
+        const ctx = exportCanvas.getContext("2d")
+
+        // 🔥 gambar langsung image data hasil edit
+        ctx.drawImage(srcCanvas, 0, 0)
+
+        // 🔽 download
+        const link = document.createElement("a")
+        link.download = "result.png"
+        link.href = exportCanvas.toDataURL("image/png")
+        link.click()
+    }
 
 
     return (
@@ -736,7 +857,7 @@ export default function ToolsCitra() {
             <div className="flex flex-col md:flex-row justify-between items-center px-3 md:px-5 py-2 gap-2 mb-3">
                 {/* LOGO */}
                 <span className="text-neutral-50 text-xl font-semibold md:w-[30%] text-center md:text-left">
-                    logo<span className="text-orange-300">logo</span>
+                    <span className="text-orange-300">wava</span>crew
                 </span>
 
                 {/* ACTION CENTER */}
@@ -763,7 +884,7 @@ export default function ToolsCitra() {
                 <div className="md:w-[30%] flex justify-center md:justify-end">
                     <button className={`flex items-center gap-2 bg-white/10 backdrop-blur-sm
             text-gray-300 px-3 py-1.5 rounded-lg hover:bg-white/20 transition text-sm
-            ${!hasImage ? "pointer-events-none opacity-50" : ""}`}>
+            ${!hasImage ? "pointer-events-none opacity-50" : ""}`} onClick={exportImage}>
                         <BiExport className="text-lg" />
                         <span className="hidden sm:inline">Export</span>
                     </button>
@@ -819,35 +940,40 @@ export default function ToolsCitra() {
 
                     {!hasImage && (
                         <label
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
+                            /* Drag hanya desktop */
+                            onDragOver={(e) => {
+                                if (window.innerWidth >= 768) handleDragOver(e)
+                            }}
+                            onDragLeave={(e) => {
+                                if (window.innerWidth >= 768) handleDragLeave(e)
+                            }}
+                            onDrop={(e) => {
+                                if (window.innerWidth >= 768) handleDrop(e)
+                            }}
                             className={`
-            w-[90%] h-[70%]
-            sm:w-4/5 sm:h-4/5
-            md:w-3/4 md:h-3/4
+      w-[92%] h-[55%]
+      sm:h-[60%]
+      md:w-3/4 md:h-3/4
 
-            border-2 border-dashed
-            rounded-2xl sm:rounded-3xl
-            cursor-pointer
+      border-2 border-dashed
+      rounded-2xl md:rounded-3xl
+      cursor-pointer
 
-            flex flex-col justify-center items-center
-            text-gray-200
-            gap-2 sm:gap-3
+      flex flex-col justify-center items-center
+      text-gray-200
+      gap-2 sm:gap-3
 
-            bg-gradient-to-br from-[#0a151a] via-[#142b33] to-[#1f3e4b]
-            transition-all duration-200 ease-out
+      bg-gradient-to-br from-[#0a151a] via-[#142b33] to-[#1f3e4b]
+      transition-all duration-200 ease-out
 
-            ${isDragging
-                                    ? "border-indigo-400 bg-indigo-500/10 scale-[1.02] sm:scale-105"
-                                    : "border-gray-600"
-                                }
+      ${isDragging
+                                    ? "md:border-indigo-400 md:bg-indigo-500/10 md:scale-105"
+                                    : "border-gray-600"}
 
-            ${hasImage
+      ${hasImage
                                     ? "opacity-0 scale-95 pointer-events-none"
-                                    : "opacity-100 scale-100"
-                                }
-        `}
+                                    : "opacity-100 scale-100"}
+    `}
                         >
                             <input
                                 type="file"
@@ -857,26 +983,23 @@ export default function ToolsCitra() {
                             />
 
                             {/* ICON */}
-                            <BiSolidImageAdd
-                                className="
-                text-gray-300 mb-3
-                text-6xl sm:text-7xl md:text-8xl
-            "
-                            />
+                            <BiSolidImageAdd className="text-gray-300 text-5xl sm:text-6xl md:text-8xl mb-3" />
 
                             {/* TITLE */}
                             <p className="font-medium text-center text-sm sm:text-base">
-                                Drag & drop an image here
-                                <span className="hidden sm:inline">, or click to select</span>
+                                <span className="md:hidden">Tap to upload image</span>
+                                <span className="hidden md:inline">
+                                    Drag & drop an image here, or click to select
+                                </span>
                             </p>
 
                             {/* SUBTEXT */}
                             <p className="font-light text-xs sm:text-sm text-center text-gray-300">
-                                Supported formats:
-                                <span className="font-normal ml-1">PNG, JPEG, JPG</span>
+                                PNG, JPEG, JPG supported
                             </p>
                         </label>
                     )}
+
 
 
                     {/* ZOOM */}
@@ -971,15 +1094,18 @@ export default function ToolsCitra() {
                         <button
                             onPointerDown={() => {
                                 setIsComparing(true)
-                                drawImage(originalCanvasRef.current, rotation, flipX, flipY, zoom)
+                                hasTransparencyRef.current = false
+                                showOriginalForCompare()
                             }}
                             onPointerUp={() => {
                                 setIsComparing(false)
+                                hasTransparencyRef.current = true
                                 renderActiveImage()
                             }}
                             onPointerLeave={() => {
                                 if (!processedImageDataRef.current) return
                                 const ctx = canvasRef.current.getContext("2d")
+                                hasTransparencyRef.current = true
                                 ctx.putImageData(processedImageDataRef.current, 0, 0)
                             }}
                         >
@@ -1152,6 +1278,26 @@ export default function ToolsCitra() {
                                             const val = Number(e.target.value)
                                             setBrightness(val)          // update state untuk angka
                                             applyBrightness(val)        // apply efek
+                                        }}
+                                        className="w-full accent-indigo-400 cursor-pointer"
+                                    />
+                                </div>
+
+                                <div className="bg-white/10 rounded-xl p-2 border border-white/20">
+                                    <div className="flex justify-between text-xs text-gray-300 mb-2">
+                                        <span>Contrast</span>
+                                        <span>{contrast}%</span>
+                                    </div>
+
+                                    <input
+                                        type="range"
+                                        min="-100"
+                                        max="100"
+                                        value={contrast}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value)
+                                            setContrast(val)
+                                            applyContrast(val)
                                         }}
                                         className="w-full accent-indigo-400 cursor-pointer"
                                     />
