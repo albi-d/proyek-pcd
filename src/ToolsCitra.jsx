@@ -229,51 +229,47 @@ export default function ToolsCitra() {
         processedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
         // 🔹 Render deteksi objek di atas gambar
-        if (showBounding && objectDetectionsRef.current.length > 0) {
-            ctx.save()
+        if (showBounding) {
+            ctx.save();
 
-            // Styling bounding box
-            ctx.lineWidth = 2
-            ctx.font = "bold 14px Arial"
-            ctx.strokeStyle = "red"
-            ctx.fillStyle = "red"
-            ctx.textBaseline = "top"
+            const scaleX = containInfoRef.current.drawWidth / activeImageRef.current.width;
+            const scaleY = containInfoRef.current.drawHeight / activeImageRef.current.height;
+            const offsetX = containInfoRef.current.offsetX;
+            const offsetY = containInfoRef.current.offsetY;
 
-            const scaleX = containInfoRef.current.drawWidth / activeImageRef.current.width
-            const scaleY = containInfoRef.current.drawHeight / activeImageRef.current.height
-            const offsetX = containInfoRef.current.offsetX
-            const offsetY = containInfoRef.current.offsetY
+            if (objectDetectionsRef.current.length > 0) {
+                ctx.lineWidth = 2;
+                ctx.font = "bold 14px Arial";
+                ctx.textBaseline = "top";
 
-            objectDetectionsRef.current.forEach(pred => {
-                const [x, y, w, h] = pred.bbox
+                objectDetectionsRef.current.forEach(pred => {
+                    const [x, y, w, h] = pred.bbox;
+                    const bx = x * scaleX + offsetX;
+                    const by = y * scaleY + offsetY;
+                    const bw = w * scaleX;
+                    const bh = h * scaleY;
 
-                const bx = x * scaleX + offsetX
-                const by = y * scaleY + offsetY
-                const bw = w * scaleX
-                const bh = h * scaleY
+                    // Kotak bounding
+                    ctx.strokeStyle = "red";
+                    ctx.strokeRect(bx, by, bw, bh);
 
-                // Kotak bounding
-                ctx.strokeRect(bx, by, bw, bh)
+                    // Label Bahasa Indonesia
+                    const label = classTranslation[pred.class] || "Tidak dikenal";
+                    const text = `${label} ${(pred.score * 100).toFixed(0)}%`;
 
-                // Label Bahasa Indonesia
-                const label = classTranslation[pred.class] || pred.class
-                const text = `${label} ${(pred.score * 100).toFixed(0)}%`
+                    // Background label
+                    const textWidth = ctx.measureText(text).width;
+                    const textHeight = 18;
+                    ctx.fillStyle = "rgba(255,0,0,0.5)";
+                    ctx.fillRect(bx, by - textHeight, textWidth + 6, textHeight);
 
-                // Background label (semi-transparent)
-                const textWidth = ctx.measureText(text).width
-                const textHeight = 18
-                ctx.fillStyle = "rgba(255,0,0,0.5)"
-                ctx.fillRect(bx, by - textHeight, textWidth + 6, textHeight)
+                    ctx.fillStyle = "white";
+                    ctx.fillText(text, bx + 3, by - textHeight + 2);
+                });
+            }
 
-                // Teks
-                ctx.fillStyle = "white"
-                ctx.fillText(text, bx + 3, by - textHeight + 2)
-            })
-
-            ctx.restore()
+            ctx.restore();
         }
-
-
 
     }
 
@@ -453,19 +449,78 @@ export default function ToolsCitra() {
         return window.cocoModel
     }
 
+    // Tambahkan ref untuk menyimpan timeout
+    const noObjectTimeoutRef = useRef(null);
+
     const detectObjects = async () => {
-        if (!activeImageRef.current) return
+        if (!activeImageRef.current) return;
 
-        setDetecting(true)
-        const model = await loadObjectDetectionModel()
-        const predictions = await model.detect(activeImageRef.current)
-        objectDetectionsRef.current = predictions
-        setDetecting(false)
-        setShowBounding(true) // untuk pertama kali tampil
-        drawImage(activeImageRef.current, rotation, flipX, flipY, zoom) // render bounding box
+        setDetecting(true);
+        const model = await loadObjectDetectionModel();
+        const predictions = await model.detect(activeImageRef.current);
 
-        renderActiveImage() // render ulang canvas termasuk checkerboard
-    }
+        // Translate label
+        const translatedPredictions = predictions.map(obj => ({
+            ...obj,
+            label: classTranslation[obj.class] || "Tidak dikenal"
+        }));
+
+        objectDetectionsRef.current = translatedPredictions;
+        setDetecting(false);
+        setShowBounding(true);
+
+        // Render canvas biasa
+        drawImage(activeImageRef.current, rotation, flipX, flipY, zoom);
+        renderActiveImage();
+
+        // Jika tidak ada objek, tampilkan teks sementara
+        if (translatedPredictions.length === 0) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext("2d");
+
+            // Clear timeout/animasi sebelumnya jika ada
+            if (noObjectTimeoutRef.current) {
+                cancelAnimationFrame(noObjectTimeoutRef.current);
+            }
+
+            const fontBaseSize = 24; // desktop
+            const fontMobileSize = 16; // mobile
+            const isMobile = window.innerWidth <= 768;
+            const fontSize = isMobile ? fontMobileSize : fontBaseSize;
+
+            let startTime = null;
+            const duration = 2000; // 2 detik fade out
+
+            const animateText = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const opacity = Math.max(1 - elapsed / duration, 0);
+
+                // Render ulang canvas
+                drawImage(activeImageRef.current, rotation, flipX, flipY, zoom);
+                renderActiveImage();
+
+                // Teks
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.fillStyle = "red";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                ctx.fillText("Tidak ada objek terdeteksi", canvas.width / 2, 20);
+                ctx.restore();
+
+                if (opacity > 0) {
+                    noObjectTimeoutRef.current = requestAnimationFrame(animateText);
+                } else {
+                    noObjectTimeoutRef.current = null; // reset ref
+                }
+            };
+
+            noObjectTimeoutRef.current = requestAnimationFrame(animateText);
+        }
+    };
+
 
     useEffect(() => {
         if (!activeImageRef.current) return

@@ -30,11 +30,23 @@ html {
 }
 
 .bg-gambar {
-  background-image: url("/op1.png");
+  background-image: url("/bg.jpg");
   background-size: cover;
   background-position: center;
+  /* default untuk mobile */
   background-repeat: no-repeat;
+  height: 100vh;
+  /* full screen */
 }
+
+/* Untuk layar laptop/desktop */
+@media (min-width: 1024px) {
+  .bg-gambar {
+    background-position: center bottom;
+    /* fokus bagian bawah */
+  }
+}
+
 
 .text-shadow-soft {
   text-shadow:
