@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { BiCode, BiDownload, BiExport, BiMinus, BiPlus, BiReset, BiRotateLeft, BiSolidImageAdd, BiX } from "react-icons/bi";
-import { PiFlipHorizontal, PiFlipVertical } from "react-icons/pi";
+import { PiFlipHorizontal, PiFlipVertical, PiSelectionBackgroundBold } from "react-icons/pi";
 import { RiToolsLine } from "react-icons/ri";
 import { SelfieSegmentation } from "@mediapipe/selfie_segmentation"
 import { MdCompare } from "react-icons/md";
@@ -1563,11 +1563,11 @@ export default function ToolsCitra() {
         text-gray-100 rounded-xl
         px-4 py-1.5 text-sm font-medium
         border border-white/20
-        shadow-inner
+        shadow-inner flex justify-center items-center
         hover:bg-white/25 transition
       "
                                     >
-                                        RB
+                                        <PiSelectionBackgroundBold className=" text-2xl" />
                                     </button>
 
                                     {/* REMOVE BG AI */}
@@ -1578,11 +1578,11 @@ export default function ToolsCitra() {
         text-gray-100 rounded-xl
         px-4 py-1.5 text-sm font-medium
         border border-white/20
-        shadow-inner
+        shadow-inner flex justify-center items-center
         hover:bg-white/25 transition
       "
                                     >
-                                        RBA
+                                        <PiSelectionBackgroundBold className=" text-2xl mr-2" /> AI
                                     </button>
                                 </div>
                                 {/* DIVIDER */}
