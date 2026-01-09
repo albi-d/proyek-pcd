@@ -5,6 +5,9 @@ import { RiToolsLine } from "react-icons/ri";
 import { SelfieSegmentation } from "@mediapipe/selfie_segmentation"
 import { MdCompare } from "react-icons/md";
 import { removeBackground } from "@imgly/background-removal"
+import * as tf from "@tensorflow/tfjs"
+import * as cocoSsd from "@tensorflow-models/coco-ssd"
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 
 export default function ToolsCitra() {
@@ -41,6 +44,11 @@ export default function ToolsCitra() {
     const [contrast, setContrast] = useState(0)
     const exportImageRef = useRef(null) // simpan gambar Remove BG murni
     const [isLoadingRemoveBG, setIsLoadingRemoveBG] = useState(false)
+
+    const [showBounding, setShowBounding] = useState(false)
+    const objectDetectionsRef = useRef([]) // menyimpan hasil deteksi
+    const [detecting, setDetecting] = useState(false)
+
 
     const loadImage = (file) => {
         if (!file || !file.type.startsWith("image/")) return
@@ -219,6 +227,54 @@ export default function ToolsCitra() {
 
         originalImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height)
         processedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+        // 🔹 Render deteksi objek di atas gambar
+        if (showBounding && objectDetectionsRef.current.length > 0) {
+            ctx.save()
+
+            // Styling bounding box
+            ctx.lineWidth = 2
+            ctx.font = "bold 14px Arial"
+            ctx.strokeStyle = "red"
+            ctx.fillStyle = "red"
+            ctx.textBaseline = "top"
+
+            const scaleX = containInfoRef.current.drawWidth / activeImageRef.current.width
+            const scaleY = containInfoRef.current.drawHeight / activeImageRef.current.height
+            const offsetX = containInfoRef.current.offsetX
+            const offsetY = containInfoRef.current.offsetY
+
+            objectDetectionsRef.current.forEach(pred => {
+                const [x, y, w, h] = pred.bbox
+
+                const bx = x * scaleX + offsetX
+                const by = y * scaleY + offsetY
+                const bw = w * scaleX
+                const bh = h * scaleY
+
+                // Kotak bounding
+                ctx.strokeRect(bx, by, bw, bh)
+
+                // Label Bahasa Indonesia
+                const label = classTranslation[pred.class] || pred.class
+                const text = `${label} ${(pred.score * 100).toFixed(0)}%`
+
+                // Background label (semi-transparent)
+                const textWidth = ctx.measureText(text).width
+                const textHeight = 18
+                ctx.fillStyle = "rgba(255,0,0,0.5)"
+                ctx.fillRect(bx, by - textHeight, textWidth + 6, textHeight)
+
+                // Teks
+                ctx.fillStyle = "white"
+                ctx.fillText(text, bx + 3, by - textHeight + 2)
+            })
+
+            ctx.restore()
+        }
+
+
+
     }
 
     const handleWheel = (e) => {
@@ -303,6 +359,120 @@ export default function ToolsCitra() {
                 : prev
         )
     }
+
+    const classTranslation = {
+        "person": "Orang",
+        "bicycle": "Sepeda",
+        "car": "Mobil",
+        "motorcycle": "Motor",
+        "airplane": "Pesawat",
+        "bus": "Bus",
+        "train": "Kereta",
+        "truck": "Truk",
+        "boat": "Perahu",
+        "traffic light": "Lampu Lalu Lintas",
+        "fire hydrant": "Hidran",
+        "stop sign": "Rambu Berhenti",
+        "parking meter": "Meter Parkir",
+        "bench": "Bangku",
+        "bird": "Burung",
+        "cat": "Kucing",
+        "dog": "Anjing",
+        "horse": "Kuda",
+        "sheep": "Domba",
+        "cow": "Sapi",
+        "elephant": "Gajah",
+        "bear": "Beruang",
+        "zebra": "Zebra",
+        "giraffe": "Jerapah",
+        "backpack": "Ransel",
+        "umbrella": "Payung",
+        "handbag": "Tas Tangan",
+        "tie": "Dasi",
+        "suitcase": "Koper",
+        "frisbee": "Frisbee",
+        "skis": "Ski",
+        "snowboard": "Snowboard",
+        "sports ball": "Bola",
+        "kite": "Layangan",
+        "baseball bat": "Tongkat Baseball",
+        "baseball glove": "Sarung Tangan Baseball",
+        "skateboard": "Skateboard",
+        "surfboard": "Papan Selancar",
+        "tennis racket": "Raket Tenis",
+        "bottle": "Botol",
+        "wine glass": "Gelas Anggur",
+        "cup": "Cangkir",
+        "fork": "Garpu",
+        "knife": "Pisau",
+        "spoon": "Sendok",
+        "bowl": "Mangkuk",
+        "banana": "Pisang",
+        "apple": "Apel",
+        "sandwich": "Sandwich",
+        "orange": "Jeruk",
+        "broccoli": "Brokoli",
+        "carrot": "Wortel",
+        "hot dog": "Hotdog",
+        "pizza": "Pizza",
+        "donut": "Donat",
+        "cake": "Kue",
+        "chair": "Kursi",
+        "couch": "Sofa",
+        "potted plant": "Tanaman Pot",
+        "bed": "Tempat Tidur",
+        "dining table": "Meja Makan",
+        "toilet": "Toilet",
+        "tv": "TV",
+        "laptop": "Laptop",
+        "mouse": "Mouse",
+        "remote": "Remote",
+        "keyboard": "Keyboard",
+        "cell phone": "HP",
+        "microwave": "Microwave",
+        "oven": "Oven",
+        "toaster": "Pemanggang Roti",
+        "sink": "Wastafel",
+        "refrigerator": "Kulkas",
+        "book": "Buku",
+        "clock": "Jam",
+        "vase": "Vas",
+        "scissors": "Gunting",
+        "teddy bear": "Boneka",
+        "hair drier": "Pengering Rambut",
+        "toothbrush": "Sikat Gigi"
+    };
+
+    const loadObjectDetectionModel = async () => {
+        if (!window.cocoModel) {
+            setDetecting(true)
+            window.cocoModel = await cocoSsd.load()
+            setDetecting(false)
+            console.log("COCO-SSD model loaded")
+        }
+        return window.cocoModel
+    }
+
+    const detectObjects = async () => {
+        if (!activeImageRef.current) return
+
+        setDetecting(true)
+        const model = await loadObjectDetectionModel()
+        const predictions = await model.detect(activeImageRef.current)
+        objectDetectionsRef.current = predictions
+        setDetecting(false)
+        setShowBounding(true) // untuk pertama kali tampil
+        drawImage(activeImageRef.current, rotation, flipX, flipY, zoom) // render bounding box
+
+        renderActiveImage() // render ulang canvas termasuk checkerboard
+    }
+
+    useEffect(() => {
+        if (!activeImageRef.current) return
+        drawImage(activeImageRef.current, rotation, flipX, flipY, zoom)
+    }, [showBounding])
+
+
 
     const applyZoom = (z) => {
         const clamped = Math.min(5, Math.max(0.1, z))
@@ -966,6 +1136,42 @@ export default function ToolsCitra() {
 
             <main className="h-full w-full flex flex-col md:flex-row gap-2 relative overflow-hidden">
                 <div className="w-full md:w-[78%] h-full flex justify-center items-center relative overflow-hidden">
+
+                    <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
+                        {/* Tombol Deteksi Objek */}
+                        <button
+                            onClick={detectObjects}
+                            disabled={!hasImage || detecting}
+                            className={`p-2 rounded-full
+      bg-white/30 hover:bg-white/20
+      text-green-400 hover:text-green-500
+      transition
+      ${!hasImage || detecting ? "opacity-80 cursor-not-allowed" : ""}
+    `}
+                        >
+                            {detecting ? (
+                                <span className="text-sm">⏳</span> // icon loading
+                            ) : (
+                                <span className="text-lg">🧠</span> // icon deteksi
+                            )}
+                        </button>
+
+                        {/* Toggle Bounding Box */}
+                        {objectDetectionsRef.current.length > 0 && (
+                            <button
+                                onClick={() => setShowBounding(!showBounding)}
+                                className={`p-2 rounded-full
+        bg-white/30 hover:bg-white/20
+        text-blue-400 hover:text-blue-500
+        transition flex justify-center items-center
+      `}
+                            >
+                                {showBounding ? <FaEye className="text-lg" /> : <FaEyeSlash className="text-lg" />}
+                            </button>
+                        )}
+                    </div>
+
+
 
                     <button
                         onClick={() => hasImage && setShowSidebar(true)}
